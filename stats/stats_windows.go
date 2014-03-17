@@ -1,7 +1,22 @@
-package "stats"
+package stats
 
+import (
+	"os/exec"
+	"strings"
+	"strconv"
+)
 //wmic cpu get loadpercentage
 
-func getStats(){
-	return 0;
+func GetStats() (cpu int){
+	out, err := exec.Command("wmic","cpu", "get", "loadpercentage").Output()
+	if err != nil {
+		return -1
+	}
+	strOut := string(out)
+	line := strOut[strings.IndexAny(strOut,"1234567890"):strings.LastIndexAny(strOut, "1234567890")+1]
+	i, err := strconv.Atoi(line)
+	if err != nil{
+		return -2
+	}
+	return i
 }

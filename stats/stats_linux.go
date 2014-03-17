@@ -1,6 +1,6 @@
 package stats
 
-func getStats(){
+func getStats() int{
 	return 0;
 }
 	/*content, err := ioutil.ReadFile("/proc/stat")

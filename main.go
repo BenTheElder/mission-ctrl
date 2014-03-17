@@ -19,43 +19,53 @@ const(
 	VERSION = "Mission-Ctrl v0.0.1"
 )
 
+type sysStats struct{ cpuPercent, ramPercent int }
 
-type mcHttpHandler struct{}
+type mcHttpHandler struct{ ch chan sysStats}
+
 
 func (h *mcHttpHandler)  ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		if r.URL.Path != "/favicon.ico"{
-			fmt.Fprintf(w, "Nothing to see here...")
+			sstats := <-h.ch
+			fmt.Fprintf(w, "Cpu: %d", sstats.cpuPercent)
 		}else{
 			w.WriteHeader(http.StatusNotFound)
 		}
 	}
 }
 
-/*func statCollector(){
 
-}
-*/
+
 func main(){
 //Get startup time
 	START_TIME := time.Now()
-	
+
+//Create channels and tickers
+	statsChan := make(chan sysStats)
+	statsTicker := time.NewTicker(time.Millisecond * 500)
+	stopChan := make(chan int)
+
 //Handle ctrl-c etc.
 	signalChannel := make(chan os.Signal, 2)
-    signal.Notify(signalChannel, os.Interrupt, syscall.SIGTERM)
-    go func() {
-        sig := <-signalChannel
-        switch sig {
-        case os.Interrupt:
-            //handle SIGINT
-            println("SIGINT")
-            os.Exit(0)
-        case syscall.SIGTERM:
-            //handle SIGTERM
-            println("SIGTERM")
-            os.Exit(0)
-        }
-    }()
+	signal.Notify(signalChannel, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		sig := <-signalChannel
+		switch sig {
+		case os.Interrupt:
+			//handle SIGINT
+			println("Caught SIGINT, exiting.")
+			statsTicker.Stop()
+			close(stopChan)
+			os.Exit(0)
+		case syscall.SIGTERM:
+			//handle SIGTERM
+			println("Caught SIGTERM, exiting.")
+			statsTicker.Stop()
+			close(stopChan)
+			os.Exit(0)
+		}
+	}()
 	
 //Get options
 //62875 = MCTRL
@@ -77,17 +87,39 @@ func main(){
 	addrs, err := net.InterfaceAddrs()
 	if err != nil{
 		log.Fatal(err)
-	}else{
-		println("Detected Addresses:")
-		for _, addr := range addrs {
-			fmt.Println("\t\t\t", addr.String())
-		}
 	}
+	println("Detected Addresses:")
+	for _, addr := range addrs {
+		fmt.Println("\t\t\t", addr.String())
+	}
+
+	
+//Collect stats regularly
+	sstat := sysStats{-1,-1}
+	go func() {
+		for _ = range statsTicker.C {
+			i := stats.GetStats()
+			sstat = sysStats{i,-1}
+		}
+	}()
+
+//Pass stats along to http server as needed
+	go func(){	
+		for{
+			select {
+			case statsChan <- sstat:
+			case <- stopChan:
+				return
+			default:
+			}
+			time.Sleep(time.Millisecond * 100)
+		}
+	}()
 
 //Create and launch web server
 	s := &http.Server{
 		Addr:           HTTP_ADDR,
-		Handler:        &mcHttpHandler{},
+		Handler:        &mcHttpHandler{statsChan},
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,
