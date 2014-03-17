@@ -1,4 +1,4 @@
-package "mission-ctrl/stats"
+package "stats"
 
 //wmic cpu get loadpercentage
 
