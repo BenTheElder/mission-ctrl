@@ -27,7 +27,7 @@ func getMem() (mem float32){
 		//handle
 	}
 	var totalM float32
-	var freeM float32
+	var freeM float32 = 0
 	lines := strings.Split(string(content), "\n")
 	for _, line := range(lines){
 		fields := strings.Fields(line)
@@ -43,11 +43,23 @@ func getMem() (mem float32){
 				if err != nil {
 					//handle
 				}
-				freeM = float32(val)
+				freeM += float32(val)
+			} else if fields[0] == "Cached:" {
+				val, err := strconv.Atoi(fields[1])
+				if err != nil {
+					//handle
+				}
+				freeM += float32(val)
+				} else if fields[0] == "Buffers:" {
+				val, err := strconv.Atoi(fields[1])
+				if err != nil {
+					//handle
+				}
+				freeM += float32(val)
 			}
 		}
 	}
-	return freeM/totalM*100
+	return (totalM-freeM)/totalM*100
 }
 
 func getCpuRaw() (total, idle float32){
