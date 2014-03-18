@@ -21,12 +21,41 @@ irq: servicing interrupts
 softirq: servicing softirqs
 
 */
-func getRaw() (total, idle float32){
+func getMem() (mem float32){
+	content, err := ioutil.ReadFile("/proc/meminfo")
+	if err != nil {
+		//handle
+	}
+	var totalM float32
+	var freeM float32
+	lines := strings.Split(string(content), "\n")
+	for _, line := range(lines){
+		fields := strings.Fields(line)
+		if len(fields) > 0 {
+			if fields[0] == "MemTotal:" {
+				val, err := strconv.Atoi(fields[1])
+				if err != nil {
+					//handle
+				}
+				totalM = float32(val)
+			} else if fields[0] == "MemFree:" {
+				val, err := strconv.Atoi(fields[1])
+				if err != nil {
+					//handle
+				}
+				freeM = float32(val)
+			}
+		}
+	}
+	return freeM/totalM*100
+}
+
+func getCpuRaw() (total, idle float32){
 	content, err := ioutil.ReadFile("/proc/stat")
 	if err != nil {
 		//handle
 	}
-	lines := strings.Split(string(content),"\n")
+	lines := strings.Split(string(content), "\n")
 	for _, line := range(lines) {
 		fields := strings.Fields(line)
 		if fields[0] == "cpu" {
@@ -47,10 +76,10 @@ func getRaw() (total, idle float32){
 	return
 }
 
-func GetStats() float32{
-	total0, idle0 := getRaw()
+func GetStats() (cpu, mem float32){
+	total0, idle0 := getCpuRaw()
 	time.Sleep(time.Millisecond * 200)
-	total1, idle1 := getRaw()
+	total1, idle1 := getCpuRaw()
 	diffTotal := total1-total0
-	return (diffTotal-(idle1-idle0))/diffTotal*100
+	return (diffTotal-(idle1-idle0))/diffTotal*100, getMem()
 }

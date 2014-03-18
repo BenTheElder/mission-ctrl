@@ -7,7 +7,7 @@ import (
 )
 //wmic cpu get loadpercentage
 
-func GetStats() (cpu float32){
+func GetStats() (cpu, mem float32){
 	out, err := exec.Command("wmic","cpu", "get", "loadpercentage").Output()
 	if err != nil {
 		return -1
@@ -18,5 +18,5 @@ func GetStats() (cpu float32){
 	if err != nil{
 		return -2
 	}
-	return float32(i)
+	return float32(i), -1
 }

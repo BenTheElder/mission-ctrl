@@ -22,12 +22,17 @@ const(
 "canvas {display: inline;}</style>"+
 "<body style=\"background-color: rgb(56, 104, 146)\">"+
 "<script type=\"text/javascript\" src=\"smoothie.js\"></script>"+
-"<h1 style=\"text-align:center\">Cpu % Usage:</h1>"+
+"<h1 style=\"text-align:center\">Cpu Usage (%):</h1>"+
 "<div id=\"canvas-container\">"+
-"<canvas id=\"mycanvas\" width=\"400\" height=\"100\"></canvas>"+
+"<canvas id=\"cpucanvas\" width=\"400\" height=\"100\"></canvas>"+
+"</div>"+
+"<h1 style=\"text-align:center\">Memory Usage (%):</h1>"+
+"<div id=\"canvas-container\">"+
+"<canvas id=\"memcanvas\" width=\"400\" height=\"100\"></canvas>"+
 "</div>"+
 "<script type=\"text/javascript\">"+
 "var line1 = new TimeSeries();"+
+"var line2 = new TimeSeries();"+
 "setInterval(function() {"+
 "var xmlHttp = new XMLHttpRequest();"+
 "xmlHttp.open( \"GET\", \"/data\", false );"+
@@ -35,16 +40,20 @@ const(
 "var resp = xmlHttp.responseText;"+
 "var data = JSON.parse(resp);"+
 "line1.append(new Date().getTime(), data.cpu);"+
+"line2.append(new Date().getTime(), data.mem);"+
 "}, 500);"+
 "var smoothie = new SmoothieChart({ grid: { strokeStyle: 'rgb(125, 0, 0)', fillStyle: 'rgb(60, 0, 0)', lineWidth: 1, millisPerLine: 250, verticalSections: 6 } });"+
 "smoothie.addTimeSeries(line1, { strokeStyle: 'rgb(0, 255, 0)', fillStyle: 'rgba(0, 255, 0, 0.4)', lineWidth: 3 });"+
-"smoothie.streamTo(document.getElementById(\"mycanvas\"), 1000);"+
+"smoothie.streamTo(document.getElementById(\"cpucanvas\"), 1000);"+
+"var smoothie2 = new SmoothieChart({ grid: { strokeStyle: 'rgb(125, 0, 0)', fillStyle: 'rgb(60, 0, 0)', lineWidth: 1, millisPerLine: 250, verticalSections: 6 } });"+
+"smoothie2.addTimeSeries(line2, { strokeStyle: 'rgb(0, 255, 0)', fillStyle: 'rgba(0, 255, 0, 0.4)', lineWidth: 3 });"+
+"smoothie2.streamTo(document.getElementById(\"memcanvas\"), 1000);"+
 "</script>"+
 "</body>"+
 "</html>"
 )
 
-type sysStats struct{ cpuPercent, ramPercent float32 }
+type sysStats struct{ cpuPercent, memPercent float32 }
 
 type mcHttpHandler struct{ ch chan sysStats}
 
@@ -54,7 +63,7 @@ func (h *mcHttpHandler)  ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/favicon.ico"{
 			if r.URL.Path == "/data" {
 				sstats := <-h.ch
-				fmt.Fprintf(w, "{\"cpu\": %f}", sstats.cpuPercent)
+				fmt.Fprintf(w, "{\"cpu\": %f,\"mem\":%f}", sstats.cpuPercent, sstats.memPercent)
 			} else if (r.URL.Path == "/smoothie.js") || (r.URL.Path == "smoothie.js") {
 				data, _:= binarydata.Asset("smoothiecharts/smoothie.js")
 				fmt.Fprint(w, string(data))
@@ -130,8 +139,8 @@ func main(){
 	sstat := sysStats{-1,-1}
 	go func() {
 		for _ = range statsTicker.C {
-			i := stats.GetStats()
-			sstat = sysStats{i,-1}
+			i, j := stats.GetStats()
+			sstat = sysStats{i,j}
 		}
 	}()
 
