@@ -17,11 +17,15 @@ import (
 )
 
 const(
-	VERSION = "Mission-Ctrl v0.0.1"
-	MAIN_HTML ="<html><style>#canvas-container{width: 100%;text-align:center;}"+
+	VERSION = "Mission-Ctrl v0.0.2"
+	MAIN_HTML ="<html><meta name=\"viewport\" content=\"width=410; initial-scale=1;\"><style>#canvas-container{width: 100%;text-align:center;}"+
 "canvas {display: inline;}</style>"+
-"<body style=\"background-color: rgb(56, 104, 146)\">"+
+"<body style=\"background-color: rgb(56, 104, 146);\">"+
 "<script type=\"text/javascript\" src=\"smoothie.js\"></script>"+
+"<div id=\"bodydiv\" style=\"width: 400px; margin: 0px auto;\">"+
+"<h1 style=\"color: white;text-decoration: underline;text-underline-color: white;text-align: center;\">"+
+VERSION+
+"</h1>"+
 "<h1 style=\"text-align:center\">Cpu Usage (%):</h1>"+
 "<div id=\"canvas-container\">"+
 "<canvas id=\"cpucanvas\" width=\"400\" height=\"100\"></canvas>"+
@@ -49,6 +53,7 @@ const(
 "smoothie2.addTimeSeries(line2, { strokeStyle: 'rgb(0, 255, 0)', fillStyle: 'rgba(0, 255, 0, 0.4)', lineWidth: 3 });"+
 "smoothie2.streamTo(document.getElementById(\"memcanvas\"), 1000);"+
 "</script>"+
+"</div"+
 "</body>"+
 "</html>"
 )

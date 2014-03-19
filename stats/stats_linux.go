@@ -93,5 +93,9 @@ func GetStats() (cpu, mem float32){
 	time.Sleep(time.Millisecond * 200)
 	total1, idle1 := getCpuRaw()
 	diffTotal := total1-total0
-	return (diffTotal-(idle1-idle0))/diffTotal*100, getMem()
+	cpu = (diffTotal-(idle1-idle0))/diffTotal*100
+	if cpu < 0 {
+		cpu = 0
+	}
+	return cpu, getMem()
 }
